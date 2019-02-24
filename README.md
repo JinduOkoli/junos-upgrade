@@ -22,7 +22,7 @@ Requests: `pip install requests`
 
 To clone the repository
 
-`git clone https://git.juniper.net/jokoli/junos_upgrade.git`
+`git clone https://git.juniper.net/americas-poc/junos-upgrade.git`
 
 To run the software installation script
 
