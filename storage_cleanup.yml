@@ -1,0 +1,24 @@
+---
+- name: Storage Cleanup
+  hosts: devices
+
+  roles:
+  - Juniper.junos
+  connection: local
+  gather_facts: no
+
+#   vars:
+#     connection_settings:
+#       host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+#       user: "{{ username }}"
+#       passwd: "{{ password }}"
+  vars_files:
+  - vault-vars.yml
+
+
+  tasks:
+  - name: System storage cleanup
+    juniper_junos_rpc:
+    #   provider: "{{ connection_settings }}"
+      provider: "{{ lab_credentials }}"
+      rpcs: "request-system-storage-cleanup"

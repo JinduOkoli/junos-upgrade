@@ -1,0 +1,70 @@
+  - name : Get version
+    command: python jtac_retrieve.py -m {{ junos.model }}
+    register: retrieved_jtac_version
+    ignore_errors: True
+
+  - name: Fail the play if the JTAC version cannot be retrieved
+    fail:
+      msg: "Could not retrieve JTAC version. Please specify the version at the beginning of the play"
+    when: "retrieved_jtac_version.failed == True"
+      
+  - set_fact:
+      jtac_version: "{{ retrieved_jtac_version.stdout_lines }}"
+ 
+  - debug:
+      msg: "The JTAC version retrieved from Juniper site is '{{ jtac_version[0] }}'"
+
+  - name: Compare current version with JTAC version
+    fail:
+      msg: "No Upgrade required for {{ inventory_hostname }}. Junos device is currently running JTAC version. Exiting Script..."
+    when:  jtac_version[0] in junos.version
+
+
+  - name : Get filepath
+    command: python extract_filename.py -u {{ url }} -v {{ jtac_version[0] }}
+    register: retrieved_version
+    ignore_errors: True
+
+  - name: Fail the play if the version cannot be retrieved from the FTP server
+    fail:
+      msg: "Could not locate software package on FTP server. Please upload and try again"
+    when: retrieved_version.failed == True
+
+  - debug:
+      msg: "Successfully retrieved '{{ retrieved_version.stdout }}' from FTP Server"
+
+  - set_fact:
+      url_version: "{{ retrieved_version.stdout_lines }}"
+
+  - name: Check if version exists in temporary folder
+    stat:
+      path: /var/tmp/{{ url_version[0] }}
+    register: file_path_update
+
+  - set_fact: 
+       vmhost_bool: yes
+    when: '"vmhost" in url_version[0]'
+
+  - set_fact: 
+       vmhost_bool: no
+    when: 'not "vmhost" in url_version[0]'
+
+  - name: Copying the image
+    get_url:
+      url: "{{ url }}/{{ url_version[0] }}"
+      dest: /var/tmp
+    when:
+      - file_path_update.stat.exists == False
+
+  - juniper_junos_software:
+    #   provider: "{{ connection_settings }}"
+      provider: "{{lab_credentials}}"
+      local_package: /var/tmp/{{ url_version[0] }}
+      reboot_pause: 65
+      logfile: "{{ log_file }}"
+      vmhost: "{{ vmhost_bool }}"
+    register: response
+    notify:
+      - update_user
+      - wait_reboot
+      

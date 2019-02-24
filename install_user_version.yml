@@ -1,0 +1,56 @@
+  - name: Compare current version with requested version
+    fail:
+      msg: "{{ inventory_hostname }} software version is up to date. No other action required. Exiting Script..."
+    when: junos.version == version
+
+  - name : Get filepath
+    command: python extract_filename.py -u {{ url }} -v {{ version }}
+    register: retrieved_version
+    failed_when: "'Software Package' in  retrieved_version.stdout"
+    #ignore_errors: yes
+
+  - name: Fail the play if the version cannot be retrieved from the FTP server
+    fail:
+      msg: "Could not locate software package on FTP server. Please upload the file to the FTP Server and run the script again. Exiting Script..."
+    when: retrieved_version.failed == True
+
+  - set_fact:
+      url_version: "{{ retrieved_version.stdout_lines }}"
+
+  - debug:
+      msg: "Successfully retrieved '{{ url_version[0] }}' from FTP Server"
+  
+  - name: Check if version exists in temporary folder
+    stat:
+      path: "/var/tmp/{{ url_version[0] }}"
+    register: file_path_update
+    
+  - set_fact: 
+       vmhost_bool: yes
+    when: '"vmhost" in url_version[0]'
+
+  - set_fact: 
+       vmhost_bool: no
+    when: 'not "vmhost" in "url_version[0]"'
+    
+  - name: Copying the image
+    get_url:
+      url: "{{ url }}/{{ url_version[0] }}"
+      dest: /var/tmp
+    when:
+    - junos.version != version
+    - file_path_update.stat.exists == False
+
+
+  - juniper_junos_software:
+    #   provider: "{{ connection_settings }}"
+      provider: "{{lab_credentials}}"
+      local_package: /var/tmp/{{ url_version[0] }}
+      reboot_pause: 65
+      logfile: "{{ log_file }}"
+      vmhost: "{{ vmhost_bool }}"
+      all_re: false
+    register: response
+    notify:
+    - update_user
+    - wait_reboot

@@ -1,0 +1,51 @@
+---
+- name: Systsem Zeroize
+#   hosts: devices
+  hosts: all
+
+  roles:
+  - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  vars:
+    telnet_port: 23
+    wait_time: 600
+#     connection_settings:
+#       host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+#       user: "{{ username }}"
+#       passwd: "{{ password }}"
+  vars_files:
+  - vault-vars.yml
+
+
+  tasks:
+  - name: Request System Zeroize
+    juniper_junos_system:
+    #   provider: "{{ connection_settings }}"
+      provider:
+        user: "{{ username }}"
+        passwd: "{{ password }}"
+        mode: "telnet"
+        port: "{{telnet_port}}"
+      action: "zeroize"
+    notify:
+      - update_user
+      - wait_reboot
+
+  - name: Print the complete response.
+    debug:
+      msg: "Success"
+
+    
+  handlers:
+    - name: update_user
+      debug:
+        msg: "{{ inventory_hostname }} has been zeroized. Waiting for device to come back online..."
+
+    - name: wait_reboot
+      wait_for:
+        host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+        port: "{{ telnet_port }}"
+        delay: 400
+        timeout: "{{ wait_time }}"

@@ -1,0 +1,67 @@
+---
+- name: Software update
+  hosts: Junos
+
+  roles:
+  - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  vars:
+    wait_time: 900
+    log_dir: "/home/logs/software"
+    log_file: "{{ log_dir }}/{{ inventory_hostname }}-software.log"
+    netconf_port: 830
+    
+    # connection_settings:
+    #   host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+    #   user: "{{username}}"
+    #   passwd: "{{password}}"
+
+  vars_files:
+  - vault-vars.yml
+
+#specify junos verion
+  pre_tasks:
+  - set_fact:
+       product={{ inventory_hostname | regex_replace("\w+-(\w+)-\w+-\w+", "\\1") }}
+    when: inventory_hostname[0:3] is search("^[A-Za-z]")
+  - set_fact:
+       product={{ product | regex_replace("\w+-(\w+)-\w+", "\\1") }}
+    when: inventory_hostname[0:3] is search("^[A-Za-z]")
+  - debug:
+      var: product
+
+  tasks:
+  - name: Retrieve version from device running Junos OS
+    juniper_junos_facts:
+      provider: "{{ lab_credentials }}"
+
+  - name: Include url from product
+    include_vars:
+      file: "models/{{ product }}.yml"
+
+  - include_tasks: install_jtac.yml
+    when: version|lower == "jtac"
+
+  - include_tasks: install_user_version.yml
+    when: version|lower != "jtac"
+
+
+  - name: Print result when Version is up to Date
+    debug:
+      msg: "No Upgrade Performed. {{ inventory_hostname }} Software Version is up to date"
+    when: response.changed == false
+
+  handlers:
+  - name: update_user
+    debug:
+      msg: "Junos software upgrade for device {{ inventory_hostname }} is now complete. Rebooted and waiting for device to come back online..."
+
+  - name: wait_reboot
+    wait_for:
+      host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+      port: "{{ netconf_port }}"
+      timeout: "{{ wait_time }}"
+    when: not response.check_mode
+
