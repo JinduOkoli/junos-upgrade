@@ -34,12 +34,16 @@
     juniper_junos_facts:
       provider: "{{ lab_credentials }}"
 
-  - name: Compare current version with requested version
-    debug:
-      msg: "{{ inventory_hostname }} software version is up to date. No other action required. Ignoring host..."
-    when:  
-      - junos.version == version
-      - version|lower != "jtac"
+  - name : Compare current version with Requested version
+    block:
+      - name: Exit Script if version is Up to date
+        debug:
+          msg: "{{ inventory_hostname }} software version is up to date. No other action required. Ignoring host..."
+        when: 'junos.version == version'
+        
+      - set_fact:
+          dev_version: "{{ version }}"
+    when: 'version|lower != "jtac"'
 
   - name : Compare current version with JTAC version
     block:
@@ -63,17 +67,17 @@
         debug:
           msg: "No Upgrade required for {{ inventory_hostname }}. Junos device is currently running JTAC version. Exiting host..."
         when:  jtac_version[0] in junos.version
+        
+      - set_fact:
+          dev_version: "{{ jtac_version[0] }}"
     when: version|lower == "jtac"
 
- 
   - name: Include url from product
     include_vars:
       file: "models/{{ product }}.yml"
 
   - include_tasks: install_version.yml
-    when: (junos.version != version) or 
-      - jtac_version is defined
-      - 'not jtac_version[0] in junos.version'
+    when: 'dev_version != junos.version'
 
   handlers:
   - name: update_user
