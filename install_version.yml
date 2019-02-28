@@ -1,18 +1,16 @@
   - set_fact:
-      version: "{{ version }}"
-      
-  - set_fact:
-      version: "{{ jtac_version[0] }}"
+      dev_version: "{{ jtac_version[0] }}"
     when: 'version|lower == "jtac"'
     
-#   - set_fact:
-#       dev_version: "{{ version }}"
-#     when: 'version|lower != "jtac"'
+  - set_fact:
+      dev_version: "{{ version }}"
+    when: 'version|lower != "jtac"'
+    
   - debug:
-      msg: "{{ version }}"
+      msg: "{{ dev_version }}"
      
   - name : Get filepath
-    command: python extract_filename.py -u {{ url }} -v {{ version }}
+    command: python extract_filename.py -u {{ url }} -v {{ dev_version }}
     register: retrieved_version
     failed_when: "'Software Package' in  retrieved_version.stdout"
 
