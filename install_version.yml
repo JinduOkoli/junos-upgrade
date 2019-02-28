@@ -1,8 +1,12 @@
   - set_fact:
-      version: "{{ jtac_version[0] }}"
+      version: jtac_version[0]
     when: 'version|lower == "jtac"'
+    
+#   - set_fact:
+#       dev_version: "{{ version }}"
+#     when: 'version|lower != "jtac"'
   - debug:
-      msg: "{{ version }}"
+      msg: "{{ dev_version }}"
      
   - name : Get filepath
     command: python extract_filename.py -u {{ url }} -v {{ version }}
