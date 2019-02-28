@@ -1,5 +1,8 @@
   - set_fact:
-      version: jtac_version[0]
+      version: "{{ version }}"
+      
+  - set_fact:
+      version: "{{ jtac_version[0] }}"
     when: 'version|lower == "jtac"'
     
 #   - set_fact:
