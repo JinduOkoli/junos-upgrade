@@ -77,7 +77,7 @@
       file: "models/{{ product }}.yml"
 
   - include_tasks: install_version.yml
-    when: 'dev_version != junos.version'
+    when: 'not dev_version in junos.version'
 
   handlers:
   - name: update_user
