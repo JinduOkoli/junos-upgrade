@@ -6,7 +6,7 @@
 #       dev_version: "{{ version }}"
 #     when: 'version|lower != "jtac"'
   - debug:
-      msg: "{{ dev_version }}"
+      msg: "{{ version }}"
      
   - name : Get filepath
     command: python extract_filename.py -u {{ url }} -v {{ version }}
