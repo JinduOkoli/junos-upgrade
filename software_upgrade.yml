@@ -12,11 +12,6 @@
     log_dir: "/home/logs/software"
     log_file: "{{ log_dir }}/{{ inventory_hostname }}-software.log"
     netconf_port: 830
-    
-    # connection_settings:
-    #   host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
-    #   user: "{{username}}"
-    #   passwd: "{{password}}"
 
   vars_files:
   - vault-vars.yml
@@ -26,9 +21,11 @@
   - set_fact:
        product={{ inventory_hostname | regex_replace("\w+-(\w+)-\w+-\w+", "\\1") }}
     when: inventory_hostname[0:3] is search("^[A-Za-z]")
+
   - set_fact:
        product={{ product | regex_replace("\w+-(\w+)-\w+", "\\1") }}
     when: inventory_hostname[0:3] is search("^[A-Za-z]")
+
   - debug:
       var: product
 
@@ -37,21 +34,46 @@
     juniper_junos_facts:
       provider: "{{ lab_credentials }}"
 
+  - name: Compare current version with requested version
+    debug:
+      msg: "{{ inventory_hostname }} software version is up to date. No other action required. Ignoring host..."
+    when:  
+      - junos.version == version
+      - version|lower != "jtac"
+
+  - name : Compare current version with JTAC version
+    block:
+      - name: Get JTAC version from Juniper site
+        command: python jtac_retrieve.py -m {{ junos.model }}
+        register: retrieved_jtac_version
+        ignore_errors: True
+
+      - name: Fail the play if the JTAC version cannot be retrieved
+        fail:
+          msg: "Could not retrieve JTAC version. Please specify the version at the beginning of the play"
+        when: "retrieved_jtac_version.failed == True"
+
+      - set_fact:
+          jtac_version: "{{ retrieved_jtac_version.stdout_lines }}"
+
+      - debug:
+          msg: "The JTAC version retrieved from Juniper site is '{{ jtac_version[0] }}'"
+
+      - name: Compare current version with JTAC version
+        debug:
+          msg: "No Upgrade required for {{ inventory_hostname }}. Junos device is currently running JTAC version. Exiting host..."
+        when:  jtac_version[0] in junos.version
+    when: version|lower == "jtac"
+
+ 
   - name: Include url from product
     include_vars:
       file: "models/{{ product }}.yml"
 
-  - include_tasks: install_jtac.yml
-    when: version|lower == "jtac"
-
-  - include_tasks: install_user_version.yml
-    when: version|lower != "jtac"
-
-
-  - name: Print result when Version is up to Date
-    debug:
-      msg: "No Upgrade Performed. {{ inventory_hostname }} Software Version is up to date"
-    when: response.changed == false
+  - include_tasks: install_version.yml
+    when: (junos.version != version) or 
+      - jtac_version is defined
+      - 'not jtac_version[0] in junos.version'
 
   handlers:
   - name: update_user

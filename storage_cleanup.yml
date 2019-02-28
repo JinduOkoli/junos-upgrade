@@ -1,6 +1,6 @@
 ---
 - name: Storage Cleanup
-  hosts: devices
+  hosts: Junos
 
   roles:
   - Juniper.junos

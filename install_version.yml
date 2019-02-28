@@ -1,0 +1,51 @@
+  - set_fact:
+      version: "{{ jtac_version[0] }}"
+    when: version|lower == "jtac"
+
+  - name : Get filepath
+    command: python extract_filename.py -u {{ url }} -v {{ version }}
+    register: retrieved_version
+    failed_when: "'Software Package' in  retrieved_version.stdout"
+
+  - debug:
+      msg: "Successfully retrieved '{{ retrieved_version.stdout }}' from FTP Server"
+
+  - set_fact:
+      url_version: "{{ retrieved_version.stdout_lines }}"
+
+  - name: Check if version exists in temporary folder
+    stat:
+      path: /var/tmp/{{ url_version[0] }}
+    register: file_path_update
+
+  - set_fact:
+       vmhost_bool: yes
+    when: '"vmhost" in url_version[0]'
+
+  - set_fact:
+       vmhost_bool: no
+    when: 'not "vmhost" in url_version[0]'
+
+  - name: Copying the image
+    get_url:
+      url: "{{ url }}/{{ url_version[0] }}"
+      dest: /var/tmp
+    when:
+      - file_path_update.stat.exists == False
+
+  - juniper_junos_software:
+      provider: "{{lab_credentials}}"
+      local_package: /var/tmp/{{ url_version[0] }}
+      reboot_pause: 65
+      logfile: "{{ log_file }}"
+      vmhost: "{{ vmhost_bool }}"
+    register: response
+    notify:
+      - update_user
+      - wait_reboot
+
+  - name: Print result when Version is up to Date
+    debug:
+      msg: "No Upgrade Performed. {{ inventory_hostname }} Software Version is up to date"
+    when: response.changed == false
+
