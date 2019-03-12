@@ -28,7 +28,7 @@ To run the software installation script
 
 ```
 cd junos_upgrade
-ansible-playbook  software_upgrade.yml -i inventory --limit=host1,host2,...
+ansible-playbook  software_upgrade.yml -i inventory --ask-vault-pass
 ```
 For example:
 
@@ -41,7 +41,7 @@ To perform a storage cleanup
 
 ```
 cd junos_upgrade
-ansible-playbook  storage_cleanup.yml -i inventory --limit=host1,host2,...
+ansible-playbook  storage_cleanup.yml -i inventory --ask-vault-pass
 ```
 
 For example:
