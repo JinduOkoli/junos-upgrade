@@ -36,6 +36,7 @@
       reboot_pause: 65
       logfile: "{{ log_file }}"
       vmhost: "{{ vmhost_bool }}"
+      install_timeout: 3600
     register: response
     notify:
       - update_user
