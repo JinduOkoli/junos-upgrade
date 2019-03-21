@@ -48,7 +48,7 @@ For example:
 
 ansible-playbook  storage_cleanup.yml  -i inventory --limit=poc-qfx5110-17,poc-ex4300-13
 
-**Note**: the `intsall_timeout` value in the `install_version.yml file` can be increased in cases where the file is too large.
+**Note**: the `install_timeout` value in the `install_version.yml file` can be increased in cases where the file is too large.
 
 ## Assumptions
 
