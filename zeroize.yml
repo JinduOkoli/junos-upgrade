@@ -12,7 +12,7 @@
     telnet_port: 23
     wait_time: 600
 #     connection_settings:
-#       host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+#       host: "{{ inventory_hostname }}"
 #       user: "{{ username }}"
 #       passwd: "{{ password }}"
   vars_files:
@@ -45,7 +45,7 @@
 
     - name: wait_reboot
       wait_for:
-        host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+        host: "{{ inventory_hostname }}"
         port: "{{ telnet_port }}"
         delay: 400
         timeout: "{{ wait_time }}"
