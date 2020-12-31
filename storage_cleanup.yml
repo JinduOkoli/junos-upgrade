@@ -9,7 +9,7 @@
 
 #   vars:
 #     connection_settings:
-#       host: "{{ inventory_hostname }}.amerpoc.jnpr.net"
+#       host: "{{ inventory_hostname }}"
 #       user: "{{ username }}"
 #       passwd: "{{ password }}"
   vars_files:
